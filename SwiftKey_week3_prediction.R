@@ -5,7 +5,7 @@ library(tidytext)
 library(dplyr)
 
 rm(list = ls())
-folder <- "C:/Users/gaxu/Dropbox/Work/Programming/R/Coursera/Data Specialization/Course 10 Capstone/"
+folder <- "C:/Users/liduan/Documents/"
 setwd(folder)
 url <- "https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip"
 #download.file(url = url, destfile = "Coursera-SwiftKey.zip")
@@ -25,23 +25,16 @@ chunk_size <- 100000
 # preprocessing
 # remove non-English word
 filter_char <- function (text) {
-    splittext <- unlist(strsplit(text, split = " "))
-    nonassic_idx <- which(is.na(iconv(splittext, "latin1", "ASCII")))
-    if (length(nonassic_idx) > 0) {
-        converted <- paste(splittext[-nonassic_idx], collapse = " ")
-    } else {
-        converted <- text
-    }
-    return(converted)
+  splittext <- unlist(strsplit(text, split = " "))
+  nonassic_idx <- which(is.na(iconv(splittext, "latin1", "ASCII")))
+  if (length(nonassic_idx) > 0) {
+    converted <- paste(splittext[-nonassic_idx], collapse = " ")
+  } else {
+    converted <- text
+  }
+  return(converted)
 }
-# # unique term with sum of count
-# uniqueterm <- function (x) {
-#     u <- distinct(x)
-#     for (i in 1:nrow(u)) {
-#         u$count[i] <- sum(x$count[which(x$term==u$term[i])])
-#     }
-#     return(u)
-# }
+
 # remove URL
 removeURL <- function(x) gsub("http:[[:alnum:]]*", "", x)
 # remove hash tag
@@ -72,49 +65,49 @@ blogs.df.trigram <- vector(mode = "list", length = n)
 blogs.df.bigram <- vector(mode = "list", length = n)
 
 for (i in 1:n) {
-    cp <- VCorpus(VectorSource(blogs[randomperm[((i-1)*chunk_size+1):min(i*chunk_size,length(randomperm))]]))
-    cp <- tm_map(cp, removePunctuation)
-    cp <- tm_map(cp, removeNumbers)
-    cp <- tm_map(cp, content_transformer(tolower))
-    cp <- tm_map(cp, stripWhitespace)
-    cp <- tm_map(cp, PlainTextDocument)
-    
-    # 5 gram
-    blogs.df.fivegram[[i]] <- cp %>% 
-        TermDocumentMatrix(control=list(tokenize = FivegramTokenizer)) %>%
-        tidy(fivegram) %>% 
-        select(term, count) %>% 
-        group_by(term) %>% 
-        summarise(count = sum(count)) #%>% 
-    #filter(count > 1)
-    
-    # 4 gram
-    blogs.df.fourgram[[i]] <- cp %>% 
-        TermDocumentMatrix(control=list(tokenize = FourgramTokenizer)) %>%
-        tidy(fourgram) %>% 
-        select(term, count) %>% 
-        group_by(term) %>% 
-        summarise(count = sum(count)) #%>% 
-        #filter(count > 1)
-    # 3 gram
-    
-    blogs.df.trigram[[i]] <- cp %>% 
-        TermDocumentMatrix(control=list(tokenize = TrigramTokenizer)) %>%
-        tidy(trigram) %>% 
-        select(term, count) %>% 
-        group_by(term) %>% 
-        summarise(count = sum(count)) #%>% 
-        #filter(count > 1)
-    # 2 gram
-    blogs.df.bigram[[i]] <- cp %>%
-        TermDocumentMatrix(control=list(tokenize = BigramTokenizer)) %>%
-        tidy(bigram) %>% 
-        select(term, count) %>% 
-        group_by(term) %>% 
-        summarise(count = sum(count)) #%>% 
-        #filter(count > 1)
-    
-    print(Sys.time())
+  cp <- VCorpus(VectorSource(blogs[randomperm[((i-1)*chunk_size+1):min(i*chunk_size,length(randomperm))]])) %>%
+    tm_map(removePunctuation) %>%
+    tm_map(removeNumbers) %>%
+    tm_map(content_transformer(tolower)) %>%
+    tm_map(stripWhitespace) %>%
+    tm_map(PlainTextDocument)
+  
+  # 5 gram
+  blogs.df.fivegram[[i]] <- cp %>% 
+    TermDocumentMatrix(control=list(tokenize = FivegramTokenizer)) %>%
+    tidy() %>% 
+    select(term, count) %>% 
+    group_by(term) %>%
+    summarise(count = sum(count)) %>% 
+    filter(count > 0)
+  
+  # 4 gram
+  blogs.df.fourgram[[i]] <- cp %>% 
+    TermDocumentMatrix(control=list(tokenize = FourgramTokenizer)) %>%
+    tidy() %>% 
+    select(term, count) %>% 
+    group_by(term) %>% 
+    summarise(count = sum(count)) %>% 
+    filter(count > 1)
+  # 3 gram
+  
+  blogs.df.trigram[[i]] <- cp %>% 
+    TermDocumentMatrix(control=list(tokenize = TrigramTokenizer)) %>%
+    tidy() %>% 
+    select(term, count) %>% 
+    group_by(term) %>% 
+    summarise(count = sum(count)) %>% 
+    filter(count > 2)
+  # 2 gram
+  blogs.df.bigram[[i]] <- cp %>%
+    TermDocumentMatrix(control=list(tokenize = BigramTokenizer)) %>%
+    tidy() %>% 
+    select(term, count) %>% 
+    group_by(term) %>% 
+    summarise(count = sum(count)) %>% 
+    filter(count > 3)
+  
+  print(Sys.time())
 }
 
 
@@ -138,48 +131,47 @@ news.df.trigram <- vector(mode = "list", length = n)
 news.df.bigram <- vector(mode = "list", length = n)
 
 for (i in 1:n) {
-    cp <- VCorpus(VectorSource(news[randomperm[((i-1)*chunk_size+1):min(i*chunk_size,length(randomperm))]]))
-    cp <- tm_map(cp, removePunctuation)
-    cp <- tm_map(cp, removeNumbers)
-    cp <- tm_map(cp, content_transformer(tolower))
-    # corpus.blogs[[i]] <- tm_map(corpus.blogs[[i]], removeWords, stopwords('english'))
-    cp <- tm_map(cp, stripWhitespace)
-    cp <- tm_map(cp, PlainTextDocument)
-    
-    # 5 gram
-    news.df.fivegram[[i]] <- cp %>% 
-        TermDocumentMatrix(control=list(tokenize = FivegramTokenizer)) %>%
-        tidy(fivegram) %>% 
-        select(term, count) %>% 
-        group_by(term) %>% 
-        summarise(count = sum(count)) #%>% 
-    #filter(count > 1)
-    # 4 gram
-    news.df.fourgram[[i]] <- cp %>% 
-        TermDocumentMatrix(control=list(tokenize = FourgramTokenizer)) %>%
-        tidy(fourgram) %>% 
-        select(term, count) %>% 
-        group_by(term) %>% 
-        summarise(count = sum(count)) #%>% 
-        #filter(count > 1)
-    # 3 gram
-    news.df.trigram[[i]] <- cp %>% 
-        TermDocumentMatrix(control=list(tokenize = TrigramTokenizer)) %>%
-        tidy(trigram) %>% 
-        select(term, count) %>% 
-        group_by(term) %>% 
-        summarise(count = sum(count)) #%>% 
-        #filter(count > 1)
-    # 2 gram
-    news.df.bigram[[i]] <- cp %>%
-        TermDocumentMatrix(control=list(tokenize = BigramTokenizer)) %>%
-        tidy(bigram) %>% 
-        select(term, count) %>% 
-        group_by(term) %>% 
-        summarise(count = sum(count)) #%>% 
-        #filter(count > 1)
-    
-    print(Sys.time())
+  cp <- VCorpus(VectorSource(news[randomperm[((i-1)*chunk_size+1):min(i*chunk_size,length(randomperm))]])) %>%
+    tm_map(removePunctuation) %>%
+    tm_map(removeNumbers) %>%
+    tm_map(content_transformer(tolower)) %>%
+    tm_map(stripWhitespace) %>%
+    tm_map(PlainTextDocument)
+  
+  # 5 gram
+  news.df.fivegram[[i]] <- cp %>% 
+    TermDocumentMatrix(control=list(tokenize = FivegramTokenizer)) %>%
+    tidy() %>% 
+    select(term, count) %>% 
+    group_by(term) %>% 
+    summarise(count = sum(count)) %>% 
+    filter(count > 0)
+  # 4 gram
+  news.df.fourgram[[i]] <- cp %>% 
+    TermDocumentMatrix(control=list(tokenize = FourgramTokenizer)) %>%
+    tidy() %>% 
+    select(term, count) %>% 
+    group_by(term) %>% 
+    summarise(count = sum(count)) %>% 
+    filter(count > 1)
+  # 3 gram
+  news.df.trigram[[i]] <- cp %>% 
+    TermDocumentMatrix(control=list(tokenize = TrigramTokenizer)) %>%
+    tidy() %>% 
+    select(term, count) %>% 
+    group_by(term) %>% 
+    summarise(count = sum(count)) %>% 
+    filter(count > 2)
+  # 2 gram
+  news.df.bigram[[i]] <- cp %>%
+    TermDocumentMatrix(control=list(tokenize = BigramTokenizer)) %>%
+    tidy() %>% 
+    select(term, count) %>% 
+    group_by(term) %>% 
+    summarise(count = sum(count)) %>% 
+    filter(count > 3)
+  
+  print(Sys.time())
 }
 
 
@@ -204,46 +196,45 @@ twitter.df.trigram <- vector(mode = "list", length = n)
 twitter.df.bigram <- vector(mode = "list", length = n)
 
 for (i in 1:n) {
-    cp <- VCorpus(VectorSource(twitter[randomperm[((i-1)*chunk_size+1):min(i*chunk_size,length(randomperm))]]))
-    cp <- tm_map(cp, removePunctuation)
-    cp <- tm_map(cp, removeNumbers)
-    cp <- tm_map(cp, content_transformer(tolower))
-    # corpus.blogs[[i]] <- tm_map(corpus.blogs[[i]], removeWords, stopwords('english'))
-    cp <- tm_map(cp, stripWhitespace)
-    cp <- tm_map(cp, PlainTextDocument)
-    
-    # 5 gram
-    twitter.df.fivegram[[i]] <- cp %>%
-        TermDocumentMatrix(control=list(tokenize = FivegramTokenizer)) %>%
-        tidy(fivegram) %>% 
-        select(term, count) %>% 
-        group_by(term) %>% 
-        summarise(count = sum(count)) #%>%
-    #filter(count > 1)
-    # 4 gram
-    twitter.df.fourgram[[i]] <- cp %>%
-        TermDocumentMatrix(control=list(tokenize = FourgramTokenizer)) %>%
-        tidy(fourgram) %>% 
-        select(term, count) %>% 
-        group_by(term) %>% 
-        summarise(count = sum(count)) #%>%
-        #filter(count > 1)
-    # 3 gram
-    twitter.df.trigram[[i]] <- cp %>%
-        TermDocumentMatrix(control=list(tokenize = TrigramTokenizer)) %>%
-        tidy(trigram) %>% 
-        select(term, count) %>% 
-        group_by(term) %>% 
-        summarise(count = sum(count)) #%>%
-        #filter(count > 1)
-    # 2 gram
-    twitter.df.bigram[[i]] <- cp %>%
-        TermDocumentMatrix(control=list(tokenize = BigramTokenizer)) %>%
-        tidy(bigram) %>% 
-        select(term, count) %>% 
-        group_by(term) %>% 
-        summarise(count = sum(count)) #%>% 
-        #filter(count > 1)
+  cp <- VCorpus(VectorSource(twitter[randomperm[((i-1)*chunk_size+1):min(i*chunk_size,length(randomperm))]])) %>%
+    tm_map(removePunctuation) %>%
+    tm_map(removeNumbers) %>%
+    tm_map(content_transformer(tolower)) %>%
+    tm_map(stripWhitespace) %>%
+    tm_map(PlainTextDocument)
+  
+  # 5 gram
+  twitter.df.fivegram[[i]] <- cp %>%
+    TermDocumentMatrix(control=list(tokenize = FivegramTokenizer)) %>%
+    tidy() %>% 
+    select(term, count) %>% 
+    group_by(term) %>% 
+    summarise(count = sum(count)) %>%
+    filter(count > 0)
+  # 4 gram
+  twitter.df.fourgram[[i]] <- cp %>%
+    TermDocumentMatrix(control=list(tokenize = FourgramTokenizer)) %>%
+    tidy() %>% 
+    select(term, count) %>% 
+    group_by(term) %>% 
+    summarise(count = sum(count)) %>%
+    filter(count > 1)
+  # 3 gram
+  twitter.df.trigram[[i]] <- cp %>%
+    TermDocumentMatrix(control=list(tokenize = TrigramTokenizer)) %>%
+    tidy() %>% 
+    select(term, count) %>% 
+    group_by(term) %>% 
+    summarise(count = sum(count)) %>%
+    filter(count > 2)
+  # 2 gram
+  twitter.df.bigram[[i]] <- cp %>%
+    TermDocumentMatrix(control=list(tokenize = BigramTokenizer)) %>%
+    tidy() %>% 
+    select(term, count) %>% 
+    group_by(term) %>% 
+    summarise(count = sum(count)) %>% 
+    filter(count > 3)
 }
 
 print(Sys.time())
@@ -255,98 +246,78 @@ nBlogs <- length(blogs.df.bigram)
 nNews <- length(news.df.bigram)
 ntwitter <- length(twitter.df.bigram)
 
+print("combine bigram")
 # bigram
-df.bigram <- group_by(news.df.bigram[[1]], term) %>% summarise(count = sum(count))
+df.bigram <- news.df.bigram[[1]]
 for (i in 1:nBlogs) {
-    df.bigram <- blogs.df.bigram[[i]] %>%
-        group_by(term) %>%
-        summarise(count = sum(count)) %>%
-        rbind(df.bigram) %>%
-        group_by(term) %>%
-        summarise(count = sum(count))
-    print(i)
+  df.bigram <- blogs.df.bigram[[i]] %>%
+    rbind(df.bigram) %>%
+    group_by(term) %>%
+    summarise(count = sum(count))
 }
 
 for (i in 1:ntwitter) {
-    df.bigram <- twitter.df.bigram[[i]] %>%
-        group_by(term) %>%
-        summarise(count = sum(count)) %>%
-        rbind(df.bigram) %>%
-        group_by(term) %>%
-        summarise(count = sum(count))
-    print(i)
+  df.bigram <- twitter.df.bigram[[i]] %>%
+    rbind(df.bigram) %>%
+    group_by(term) %>%
+    summarise(count = sum(count))
 }
 
+print("combine trigram")
 # trigram
-df.trigram <- group_by(news.df.trigram[[1]], term) %>% summarise(count = sum(count))
+df.trigram <- news.df.trigram[[1]]
 for (i in 1:nBlogs) {
-    df.trigram <- blogs.df.trigram[[i]] %>%
-        group_by(term) %>%
-        summarise(count = sum(count)) %>%
-        rbind(df.trigram) %>%
-        group_by(term) %>%
-        summarise(count = sum(count))
-    print(i)
+  df.trigram <- blogs.df.trigram[[i]] %>%
+    rbind(df.trigram) %>%
+    group_by(term) %>%
+    summarise(count = sum(count))
 }
 
 for (i in 1:ntwitter) {
-    df.trigram <- twitter.df.trigram[[i]] %>%
-        group_by(term) %>%
-        summarise(count = sum(count)) %>%
-        rbind(df.trigram) %>%
-        group_by(term) %>%
-        summarise(count = sum(count))
-    print(i)
+  df.trigram <- twitter.df.trigram[[i]] %>%
+    rbind(df.trigram) %>%
+    group_by(term) %>%
+    summarise(count = sum(count))
 }
 
+print("combine fourgram")
 # fourgram
-df.fourgram <- group_by(news.df.fourgram[[1]], term) %>% summarise(count = sum(count))
+df.fourgram <- news.df.fourgram[[1]]
 for (i in 1:nBlogs) {
-    df.fourgram <- blogs.df.fourgram[[i]] %>%
-        group_by(term) %>%
-        summarise(count = sum(count)) %>%
-        rbind(df.fourgram) %>%
-        group_by(term) %>%
-        summarise(count = sum(count))
-    print(i)
+  df.fourgram <- blogs.df.fourgram[[i]] %>%
+    rbind(df.fourgram) %>%
+    group_by(term) %>%
+    summarise(count = sum(count))
 }
 
 for (i in 1:ntwitter) {
-    df.fourgram <- twitter.df.fourgram[[i]] %>%
-        group_by(term) %>%
-        summarise(count = sum(count)) %>%
-        rbind(df.fourgram) %>%
-        group_by(term) %>%
-        summarise(count = sum(count))
-    print(i)
+  df.fourgram <- twitter.df.fourgram[[i]] %>%
+    rbind(df.fourgram) %>%
+    group_by(term) %>%
+    summarise(count = sum(count))
 }
 
+print("combine fivegram")
 # fivegram
-df.fivegram <- group_by(news.df.fivegram[[1]], term) %>% summarise(count = sum(count))
+df.fivegram <- news.df.fivegram[[1]]
 for (i in 1:nBlogs) {
-    df.fivegram <- blogs.df.fivegram[[i]] %>%
-        group_by(term) %>%
-        summarise(count = sum(count)) %>%
-        rbind(df.fivegram) %>%
-        group_by(term) %>%
-        summarise(count = sum(count))
-    print(i)
+  df.fivegram <- blogs.df.fivegram[[i]] %>%
+    rbind(df.fivegram) %>%
+    group_by(term) %>%
+    summarise(count = sum(count))
 }
 
 for (i in 1:ntwitter) {
-    df.fivegram <- twitter.df.fivegram[[i]] %>%
-        group_by(term) %>%
-        summarise(count = sum(count)) %>%
-        rbind(df.fivegram) %>%
-        group_by(term) %>%
-        summarise(count = sum(count))
-    print(i)
+  df.fivegram <- twitter.df.fivegram[[i]] %>%
+    rbind(df.fivegram) %>%
+    group_by(term) %>%
+    summarise(count = sum(count))
 }
 
-save(df.bigram, df.trigram, df.fourgram, df.fivegram, file = "ngrams_df_1108.RData")
+save(df.bigram, df.trigram, df.fourgram, df.fivegram, file = "ngrams_df_1111.RData")
 bigramterms <- separate(df.bigram, term, into = c("term1", "term2"), sep = " ")
 trigramterms <- separate(df.trigram, term, into = c("term1", "term2", "term3"), sep = " ")
 fourgramterms <- separate(df.fourgram, term, into = c("term1", "term2", "term3", "term4"), sep = " ")
 fivegramterms <- separate(df.fivegram, term, into = c("term1", "term2", "term3", "term4", "term5"), sep = " ")
 
-save(bigramterms, trigramterms, fourgramterms, fivegramterms, file = "ngrams_df_1108_sep.RData")
+save(bigramterms, trigramterms, fourgramterms, fivegramterms, file = "ngrams_df_1111_sep.RData")
